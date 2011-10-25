@@ -1,0 +1,152 @@
+% Implied Volatility Calculator
+%            Daijun Xu
+%            Project 3
+%%
+% The function will estimate the market implied volatility of put and call
+% options based on Black Scholers model. I got CL and MSFT option data from
+% Yahoo!Finance for vectorization test and plot. And you can also use your
+% own data(as scalars) to calculate.
+%%
+function []=IV_calculator()
+
+%% Set the Black Scholers methods to calculate options price
+        d1=@(S,K,r,vol,T)(log(S/K)+(r+vol^2/2)*T)/(vol*sqrt(T));
+        d2=@(S,K,r,vol,T)(log(S/K)+(r-vol^2/2)*T)/(vol*sqrt(T));
+        bscallpx=@(S,K,r,vol,T)S*cdf('norm',d1,0,1)-K*exp(-r*T)*cdf('norm',d2,0,1);
+        bsputpx=@(S,K,r,vol,T)K*exp(-r*T)*cdf('norm',-d2,0,1)-S*cdf('norm',-d1,0,1);
+        bsvega=@(S,K,r,vol,T)S*pdf('norm',d1,0,1)*sqrt(T);
+    quit=0;   % Default value of quitting the program is 0  
+    while(quit==0)
+         flag1=input('Do you want use included test-data(1) or yours(2)?  ');
+%% Get parameters from user and check the validity of parameters
+        if flag1==2
+            while(quit==0)
+
+            flag2=input('Please choose the type of option \n (call is 1, put is 2):  ');
+
+            T=input('Please input Tenor(in year) of the option:  ');
+            K=input('Please input Strike price(in US dollar) of the option:  ');
+            r=input('Please input riskless rate(in decimal digits) in the market:  ');
+            S=input('Please input current price(in US dollar) of the underlying stock:  ');
+            vol_int=input('Please input a guess for newton methods:  ');
+                if T>0&&K>0&&r>-1&&r<1&&S>0
+                    quit=2;
+                 fprintf('The result of bisection methods is: \n')
+                 bisection_iv(optpx,S,K,r,T,flag2)
+                 fprintf('The result of newton methods is: \n')
+                 newton_iv(optpx,S,K,r,T,vol_int,flag2)
+                else
+                    quit=input('Parameters Error. To quit, press 1. To continue inputing parameters,press 0 \n');
+                end   
+            end
+            if quit==1
+                break
+            end
+   
+        else
+%% Import test data
+
+    CLC=xlsread('CL.xlsx','CallOptions','B2:E18');
+    CLP=xlsread('CL.xlsx','PutOptions','B2:E26');
+    MSFTC=xlsread('MSFT.xlsx','CallOptions','B2:E15');
+    MSFTP=xlsread('MSFT.xlsx','PutOptions','B2:E22');
+    
+%% Using  test data, plot and compare         
+            figure
+            % Call option of CL
+            % Bisection methods
+            BCLcall_bid=bisection_iv(CLC(:,3),CLC(:,1),CLC(:,2),0.012,3/12,1);  % Call option for CL, bid price implied volatility in bisection methods
+            subplot(2,1,1);plot(BCLcall_bid,CLC(:,2)) 
+            title1=title('Besection methods implied volatility')
+            hold on
+            BCLcall_ask=bisection_iv(CLC(:,4),CLC(:,1),CLC(:,2),0.012,3/12,1);  % Call option for CL, ask price implied volatility in bisection methods
+            plot(BCLcall_ask,CLC(:,2))
+            legend1=legend('MIV of bid','MIV of ask')
+            hold off   
+            
+            % Newton methods
+            NCLcall_bid=newton_iv(CLC(:,3),CLC(:,1),CLC(:,2),0.012,3/12,0.5,1);  % Call option for CL, bid price implied volatility in newton methods
+            subplot(2,1,2);plot(NCLcall_bid,CLC(:,2))  
+            title2=title('Newton methods implied volatility')
+            hold on
+            NCLcall_ask=newton_iv(CLC(:,4),CLC(:,1),CLC(:,2),0.012,3/12,0.5,1);  % Call option for CL, ask price implied volatility in newton methods
+            plot(NCLcall_ask,CLC(:,2))
+            legend2=legend('MIV of bid','MIV of ask')
+            hold off
+            
+            figure
+            % Put option of CL
+            % Bisection methods
+            BCLput_bid=bisection_iv(CLP(:,3),CLP(:,1),CLP(:,2),0.012,3/12,1);  % Put option for CL, bid price implied volatility in bisection methods
+            subplot(2,1,1);plot(BCLput_bid,CLC(:,2))  
+            title3=title('Besection methods implied volatility')
+            hold on
+            BCLput_ask=bisection_iv(CLC(:,4),CLC(:,1),CLC(:,2),0.012,3/12,1);  % Put option for CL, ask price implied volatility in bisection methods
+            plot(BCLput_ask,CLC(:,2)) 
+            legend3=legend('MIV of bid','MIV of ask')
+            hold off               
+            
+            % Newton methods
+            NCLcall_bid=newton_iv(CLC(:,3),CLC(:,1),CLC(:,2),0.012,3/12,0.5,1);  % Call option for CL, bid price implied volatility in newton methods
+            subplot(2,1,2);plot(NCLcall_bid,CLC(:,2))  
+            title4=title('Newton methods implied volatility')
+            hold on
+            NCLcall_ask=newton_iv(CLC(:,4),CLC(:,1),CLC(:,2),0.012,3/12,0.5,1); % Call option for CL, ask price implied volatility in newton methods
+            plot(NCLcall_ask,CLC(:,2))
+            legend4=legend('MIV of bid','MIV of ask')
+            hold off
+            
+            figure
+            % Call option of MSFT
+            % Bisection methods
+            BMSFTcall_bid=bisection_iv(MSFTC(:,3),MSFTC(:,1),MSFTC(:,2),0.012,3/12,1);  % Call option for MSFT, bid price implied volatility in bisection methods
+            subplot(2,1,1);plot(BMSFTcall_bid,MSFTC(:,2)) 
+            title5=title('Besection methods implied volatility') 
+            hold on
+            BMSFTcall_ask=bisection_iv(MSFTC(:,4),MSFTC(:,1),MSFTC(:,2),0.012,3/12,1);  % Call option for MSFT, ask price implied volatility in bisection methods
+            plot(BMSFTcall_ask,MSFTC(:,2)) 
+            legend5=legend('MIV of bid','MIV of ask')
+            hold off   
+            
+            % Newton methods
+            NMSFTcall_bid=newton_iv(MSFTC(:,3),MSFTC(:,1),MSFTC(:,2),0.012,3/12,0.5,1);  % Call option for MSFT, bid price implied volatility in newton methods
+            subplot(2,1,2);plot(NMSFTcall_bid,MSFTC(:,2))  
+            title6=title('Newton methods implied volatility') 
+            hold on
+            NMSFTcall_ask=newton_iv(MSFTC(:,4),MSFTC(:,1),MSFTC(:,2),0.012,3/12,0.5,1);  % Call option for MSFT, ask price implied volatility in newton methods
+            plot(NMSFTcall_ask,MSFTC(:,2))
+            legend6=legend('MIV of bid','MIV of ask')
+            hold off
+            
+            figure
+            % Put option of MSFT
+            % Bisection methods
+            BMSFTput_bid=bisection_iv(MSFTP(:,3),MSFTP(:,1),MSFTP(:,2),0.012,3/12,1);  % Put option for MSFT, bid price implied volatility in bisection methods
+            subplot(2,1,1);plot(BMSFTput_bid,MSFTC(:,2))  
+            title7=title('Besection methods implied volatility')
+            hold on
+            BMSFTput_ask=bisection_iv(MSFTC(:,4),MSFTC(:,1),MSFTC(:,2),0.012,3/12,1);  % Put option for MSFT, ask price implied volatility in bisection methods
+            plot(BMSFTput_ask,MSFTC(:,2)) 
+            legend7=legend('MIV of bid','MIV of ask')
+            hold off               
+            
+            % Newton methods
+            NMSFTcall_bid=newton_iv(MSFTC(:,3),MSFTC(:,1),MSFTC(:,2),0.012,3/12,0.5,1);  % Call option for MSFT, bid price implied volatility in newton methods
+            subplot(2,1,2);plot(NMSFTcall_bid,MSFTC(:,2))  
+            title8=title('Newton methods implied volatility')
+            hold on
+            NMSFTcall_ask=newton_iv(MSFTC(:,4),MSFTC(:,1),MSFTC(:,2),0.012,3/12,0.5,1);  % Call option for MSFT, ask price implied volatility in newton methods
+            plot(NMSFTcall_ask,MSFTC(:,2))
+            legend8=legend('MIV of bid','MIV of ask')
+            hold off
+            
+                
+
+
+            %% To ask if the user want to compute other options
+                quit=input('Do you want compute another option? To continue, press 0. To quit,press 1 \n');
+        end
+    end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
